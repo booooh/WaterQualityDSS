@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 FROM python:3 as base
 
 # use pipenv to install dependencies
@@ -29,5 +30,17 @@ COPY src/ /app/src/
 ENV PYTHONPATH=/app/src
 COPY test/ /test/
 ENTRYPOINT [ "pytest", "/test" ]
+=======
+FROM kennethreitz/pipenv as release
+ENV PORT '80'
+RUN apt install -y wine-stable
+COPY . /app
+CMD python3 api.py
+EXPOSE 80
+
+FROM release as test
+ENTRYPOINT ["pytest"]
+
+>>>>>>> Update Dockerfile
 
 FROM release
