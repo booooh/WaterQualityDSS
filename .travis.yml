@@ -13,7 +13,7 @@ install:
 
 # command to run tests
 script:
-  - docker run --rm -it waterqualitydss-test:latest
+  - docker run --rm -it "$DOCKER_USERNAME/waterqualitydss-test:latest"
 
 deploy:
   provider: script
