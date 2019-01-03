@@ -15,5 +15,7 @@ script:
   - docker run --rm -it waterqualitydss-test:latest
 
 deploy:
-  - docker push "$DOCKER_USERNAME/waterqualitydss:$TRAVIS_COMMIT" 
-  - docker push "$DOCKER_USERNAME/waterqualitydss-test:$TRAVIS_COMMIT" 
+  provider: script
+  script: 
+    - docker push "$DOCKER_USERNAME/waterqualitydss:$TRAVIS_COMMIT" 
+    - docker push "$DOCKER_USERNAME/waterqualitydss-test:$TRAVIS_COMMIT" 
