@@ -1,5 +1,8 @@
 language: python
+<<<<<<< HEAD
 dist: xenial
+=======
+>>>>>>> Adding travis pipeline
 python:    
   - "3.7"
 
@@ -13,6 +16,7 @@ install:
 
 # command to run tests
 script:
+<<<<<<< HEAD
   - docker run --rm -it "$DOCKER_USERNAME/waterqualitydss-test:latest"
 
 deploy:
@@ -20,3 +24,10 @@ deploy:
   script: 
     - docker push "$DOCKER_USERNAME/waterqualitydss:$TRAVIS_COMMIT" 
     - docker push "$DOCKER_USERNAME/waterqualitydss-test:$TRAVIS_COMMIT" 
+=======
+  - docker run --rm -it waterqualitydss-test:latest
+
+deploy:
+  - docker push "$DOCKER_USERNAME/waterqualitydss:$TRAVIS_COMMIT" 
+  - docker push "$DOCKER_USERNAME/waterqualitydss-test:$TRAVIS_COMMIT" 
+>>>>>>> Adding travis pipeline
