@@ -5,24 +5,28 @@ api = responder.API()
 
 @api.route("/status/{exec_id}")
 async def status(req, resp, * , exec_id):
-    if exec_id in processing.EXECUTIONS:
-        resp.media = {"id" : exec_id, "status": processing.EXECUTIONS[exec_id]}
-    else:
-        resp.media = {"id" : exec_id, "status": "NOT_FOUND"}
+    try:
+        status = processing.get_status(exec_id)
+        result = processing.get_result(exec_id)
+    except KeyError:
+        status = "NOT_FOUND"
+        result = None
 
-@api.route("/model")
-async def exec_model(req, resp):
+    resp.media = {"id" : exec_id, "status": status}
+    if result is not None:
+        resp.media["result"] = result.decode()
+
+@api.route("/dss")
+async def exec_dss(req, resp):
     """
-    Get the uploaded file, execute the model in the background
-    """
-    print("going to await data")
+    Get the uploaded file, execute the dss in the background (multiple executions of the model)
+    """    
     params = await req.media("files")
-    print(f"got {params.keys()}")    
     exec_id = processing.get_exec_id()
     
     @api.background.task
-    def task():
-        processing.execute_model(exec_id, params)
+    def task():        
+        processing.execute_dss(exec_id, params)
     
     task()
     resp.media = {"id" : exec_id}
