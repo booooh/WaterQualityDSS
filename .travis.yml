@@ -19,5 +19,3 @@ script:
 deploy:
   provider: script
   script: bash scripts/deploy.sh $TRAVIS_COMMIT
-  on:
-    all_branches: true
