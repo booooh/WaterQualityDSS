@@ -17,6 +17,4 @@ script:
 
 deploy:
   provider: script
-  script:
-    - docker push "$DOCKER_USERNAME/waterqualitydss:$TRAVIS_COMMIT"
-    - docker push "$DOCKER_USERNAME/waterqualitydss-test:$TRAVIS_COMMIT"
+  script: "scripts/deploy.sh $TRAVIS_COMMIT"
