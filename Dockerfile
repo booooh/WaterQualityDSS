@@ -28,6 +28,8 @@ COPY src/ /app/src/
 
 ENV PYTHONPATH=/app/src
 COPY test/ /test/
-ENTRYPOINT [ "pytest", "/test" ]
+
+# ignore collections warning about deprecation warning, there's nothing we can do about that for now
+ENTRYPOINT [ "pytest", "/test", "-W", "ignore::DeprecationWarning" ]
 
 FROM release
