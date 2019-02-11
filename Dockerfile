@@ -1,5 +1,8 @@
 FROM python:3 as base
 
+RUN mkdir /model
+COPY w2_exe_linux_par /model/
+
 # use pipenv to install dependencies
 RUN pip install pipenv
 WORKDIR /app

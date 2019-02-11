@@ -1,4 +1,9 @@
+import itertools
+import os
+import shutil
+
 from unittest.mock import patch
+import pytest
 from pytest import approx
 
 import processing
@@ -10,43 +15,105 @@ params = {
             {'name': 'NH4', 'target':'2.4', 'weight':'2', 'score_step':'0.2', 'desired_direction':'-1'},
             {'name': 'DO', 'target':'8.0', 'weight':'2', 'score_step':'0.5', 'desired_direction':'+1'},
         ],
-        'output_file': 'out.csv'
-    },        
+        "output_file": "tsr_2_seg7.csv",
+    },
+    'model_run': {
+        'type': 'flow',
+        'input_files': [
+            {'name': 'hangq01.csv', 'min_qwd': '1', 'max_qwd':'2', 'steps':'0.5' },
+            {'name': 'qin_br8.csv', 'min_qwd': '30', 'max_qwd':'40', 'steps':'2' }
+        ]
+    },       
 }
 
 def test_execute_dss():    
     exec_id = 'foo'
+    RUN_DIR = 'bar23'
     
+    def create_out_csv(*args, **kwargs):
+        '''
+        Create a dummy csv file for tests
+        '''
+
+        try:        
+            os.makedirs(RUN_DIR)
+        except:
+            pass
+
+        with open(os.path.join(RUN_DIR, params['model_analysis']['output_file']), 'w') as f:
+            f.write('NO3,NH4,DO,\n')
+            f.write('3.0,2.1,4.8,\n')
+        
+        return RUN_DIR
+
     with patch('processing.exec_model') as exec_model:        
-        with patch('processing.prepare_run_dir') as prepare_run_dir:
+        with patch('processing.prepare_run_dir') as prepare_run_dir:            
+            prepare_run_dir.side_effect = create_out_csv
             processing.execute_dss(exec_id, params)            
         
-    exec_model.assert_called_once()
-    prepare_run_dir.assert_called_once()
+    assert exec_model.call_count == 6 * 3  #  6 values for q_in, 3 values for hangq01
+    assert prepare_run_dir.call_count == 6 * 3
+    assert processing.get_result('foo')['score'] == approx(2.275)
+
 
 
 def test_get_run_score():
-    # test where all values are at their targets
-    with patch('processing.get_run_parameter_value', side_effect=[3.7, 2.4, 8.0]):
-        result = processing.get_run_score(None, params)
-        assert result == 0
+    RUN_DIR='foo'
+    with patch('processing.get_out_file_contents'):
+        # test where all values are at their targets
+        with patch('processing.get_run_parameter_value', side_effect=[3.7, 2.4, 8.0]):
+            result = processing.get_run_score(RUN_DIR, params)
+            assert result == 0
 
-    # test where one value exceeds target (wrong direction)
-    with patch('processing.get_run_parameter_value', side_effect=[3.7, 2.4, 7.0]):
-        result = processing.get_run_score(None, params)
-        assert result == approx(-0.5)  #  ((7.0 - 8.0)/0.5) * (2.0/8.0))
+        # test where one value exceeds target (wrong direction)
+        with patch('processing.get_run_parameter_value', side_effect=[3.7, 2.4, 7.0]):
+            result = processing.get_run_score(RUN_DIR, params)
+            assert result == approx(-0.5)  #  ((7.0 - 8.0)/0.5) * (2.0/8.0))
 
-    # test where two values exceed target (wrong direction)
-    with patch('processing.get_run_parameter_value', side_effect=[3.8, 2.4, 7.0]):
-        result = processing.get_run_score(None, params)
-        assert result == approx(-1.0)  #  ((3.7 - 3.8)/0.1)*(4.0/8.0)  + ((7.0 - 8.0)/0.5) * (2.0/(8.0))
+        # test where two values exceed target (wrong direction)
+        with patch('processing.get_run_parameter_value', side_effect=[3.8, 2.4, 7.0]):
+            result = processing.get_run_score(RUN_DIR, params)
+            assert result == approx(-1.0)  #  ((3.7 - 3.8)/0.1)*(4.0/8.0)  + ((7.0 - 8.0)/0.5) * (2.0/(8.0))
 
-    # test where two values exceed target (one in wrong direction, one in right direction)
-    with patch('processing.get_run_parameter_value', side_effect=[3.6, 2.4, 7.0]):
-        result = processing.get_run_score(None, params)
-        assert result == approx(0)  #  ((3.7 - 3.6)/0.1)*(4.0/8.0)  + ((7.0 - 8.0)/0.5) * (2.0/(8.0))
+        # test where two values exceed target (one in wrong direction, one in right direction)
+        with patch('processing.get_run_parameter_value', side_effect=[3.6, 2.4, 7.0]):
+            result = processing.get_run_score(RUN_DIR, params)
+            assert result == approx(0)  #  ((3.7 - 3.6)/0.1)*(4.0/8.0)  + ((7.0 - 8.0)/0.5) * (2.0/(8.0))
 
-    # test where two values exceed target (both in right direction)
-    with patch('processing.get_run_parameter_value', side_effect=[3.6, 2.4, 9.0]):
-        result = processing.get_run_score(None, params)
-        assert result == approx(1.0)  #  ((3.7 - 3.6)/0.1)*(4.0/8.0)  + ((9.0 - 8.0)/0.5) * (2.0/(8.0))
+        # test where two values exceed target (both in right direction)
+        with patch('processing.get_run_parameter_value', side_effect=[3.6, 2.4, 9.0]):
+            result = processing.get_run_score(RUN_DIR, params)
+            assert result == approx(1.0)  #  ((3.7 - 3.6)/0.1)*(4.0/8.0)  + ((9.0 - 8.0)/0.5) * (2.0/(8.0))
+
+def test_generate_permutations():
+    result = processing.generate_permutations(params)
+    value_perms = list(itertools.product([1.0, 1.5, 2.0], [30.0, 32.0, 34.0, 36.0, 38.0, 40.0]))
+    names = [i['name'] for i in params['model_run']['input_files']]
+    expected = [dict(zip(names, v)) for v in value_perms]
+    assert result == expected
+
+def test_mock_stream():
+    exec_id = 'mock_stream_exec'
+    mock_stream_dir = "/test/mock_stream_A"
+    test_params = {
+        "model_run": {
+            "type": "flow",
+            "input_files": [
+                {"name": "hangq01.csv", "min_qwd": "1", "max_qwd": "2", "steps": "0.5"},
+                {"name": "qin_br8.csv", "min_qwd": "30", "max_qwd": "34", "steps": "2"}
+            ]
+        },
+        "model_analysis": {
+            "type": "quality",
+            "output_file": "tsr_2_seg7.csv",
+            "parameters": [
+                {"name": "TN", "target": "0.6", "weight": "4", "score_step": "0.1", "desired_direction": "-1"},
+                {"name": "DO", "target": "11", "weight": "2", "score_step": "0.5", "desired_direction": "+1"}
+            ]
+        }
+    }
+    shutil.copy(os.path.join(processing.BASE_MODEL_DIR,
+                             processing.MODEL_EXE), mock_stream_dir)
+    processing.BASE_MODEL_DIR = mock_stream_dir
+    processing.execute_dss(exec_id, test_params)
+
