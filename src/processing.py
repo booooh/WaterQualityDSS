@@ -2,7 +2,6 @@ import csv
 from enum import Enum
 import itertools
 import os
-import random
 import shutil
 from subprocess import check_call
 import tempfile
@@ -25,11 +24,11 @@ class Execution:
         self.runs = []
         EXECUTIONS[exec_id] = self
 
-    def add_run(self, run_dir):
-        self.runs.append(run_dir)
+    def add_run(self, run_dir, p):
+        self.runs.append((run_dir,p))
 
     def clean(self):
-        for run_dir in self.runs:
+        for (run_dir, _) in self.runs:
             shutil.rmtree(run_dir)
 
     def mark_complete(self):
@@ -40,14 +39,13 @@ class Execution:
         for (i,p) in enumerate(permutations):
             print(f'going to start run {i} with p={p}')
             run_dir = prepare_run_dir(self.exec_id, params, p)                    
-            self.add_run(run_dir)
+            self.add_run(run_dir, p)
             exec_model(run_dir, params)
             print(f'Finished run {i}')
-
-        #TODO: implement logic for DSS. For now - just mock the results
-        run_scores = [(run_dir, get_run_score(run_dir, params)) for run_dir in self.runs]
-        best_run = max(run_scores, key= lambda x: x[1])
-        return {'best_run': best_run[0], 'score': best_run[1]}
+        
+        run_scores = [(run_dir, p, get_run_score(run_dir, params)) for (run_dir, p) in self.runs]        
+        best_run = max(run_scores, key= lambda x: x[2])
+        return {'best_run': best_run[0], 'params': best_run[1], 'score': best_run[2]}
         
 
 

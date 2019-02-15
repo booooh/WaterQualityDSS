@@ -28,23 +28,31 @@ params = {
 
 def test_execute_dss():    
     exec_id = 'foo'
-    RUN_DIR = 'bar23'
+
+    def get_run_dir():
+        i = 1
+        while True:
+            yield f'run_dir_{i}'
+            i = i+1
     
-    def create_out_csv(*args, **kwargs):
+    run_dirs = get_run_dir()
+    def create_out_csv(exec_id, params, param_values):
         '''
         Create a dummy csv file for tests
         '''
-
+        run_dir = next(run_dirs)        
         try:        
-            os.makedirs(RUN_DIR)
+            os.makedirs(run_dir)
         except:
             pass
 
-        with open(os.path.join(RUN_DIR, params['model_analysis']['output_file']), 'w') as f:
+        with open(os.path.join(run_dir, params['model_analysis']['output_file']), 'w') as f:
             f.write('NO3,NH4,DO,\n')
-            f.write('3.0,2.1,4.8,\n')
+            no3_val = 3.0 + (0.1 * param_values['hangq01.csv'])
+            do_val = 4.8 + (0.02 * param_values['qin_br8.csv'])
+            f.write(f'{no3_val},2.1,{do_val},\n')
         
-        return RUN_DIR
+        return run_dir
 
     with patch('processing.exec_model') as exec_model:        
         with patch('processing.prepare_run_dir') as prepare_run_dir:            
@@ -53,7 +61,7 @@ def test_execute_dss():
         
     assert exec_model.call_count == 6 * 3  #  6 values for q_in, 3 values for hangq01
     assert prepare_run_dir.call_count == 6 * 3
-    assert processing.get_result('foo')['score'] == approx(2.275)
+    assert processing.get_result('foo')['score'] == approx(2.175)    
 
 
 
@@ -92,6 +100,7 @@ def test_generate_permutations():
     expected = [dict(zip(names, v)) for v in value_perms]
     assert result == expected
 
+
 def test_mock_stream():
     exec_id = 'mock_stream_exec'
     mock_stream_dir = "/test/mock_stream_A"
@@ -116,4 +125,8 @@ def test_mock_stream():
                              processing.MODEL_EXE), mock_stream_dir)
     processing.BASE_MODEL_DIR = mock_stream_dir
     processing.execute_dss(exec_id, test_params)
+    dss_result = processing.get_result(exec_id)
+    assert dss_result['params']['hangq01.csv'] == 1.0
+    assert dss_result['params']['qin_br8.csv'] == 30.0
+    assert dss_result['score'] == approx(-1.336)
 
