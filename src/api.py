@@ -14,11 +14,10 @@ async def status(req, resp, * , exec_id):
         status = "NOT_FOUND"
         result = None
 
-    resp.media = {"id" : exec_id, "status": status}
-    print(result)
+    resp.media = {"id" : exec_id, "status": status}    
     if result is not None:
-        resp.media["result"] = result.decode()
-        print('result was not None')
+        resp.media["result"] = result
+        print(result)
 
 @api.route("/dss")
 async def exec_dss(req, resp):

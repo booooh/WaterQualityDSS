@@ -22,6 +22,9 @@ EXPOSE ${PORT}
 # define entrypoint
 ENTRYPOINT ["python3",  "src/api.py"]
 
+# copy the model -- temporary hack, should probably receive all inputs from user via request
+COPY test/mock_stream_A/* /model/  
+
 # copy the contents of the app
 COPY src/ /app/src/
 

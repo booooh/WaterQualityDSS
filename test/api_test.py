@@ -38,7 +38,7 @@ def test_dss_execution(api, tmp_path):
     '''
     Test the execution of a dss, including setting the paramters, and polling for a result
     '''    
-    RESPONSE="some result"
+    RESPONSE={"score" : 4.2}
    
     file_obj = tmp_path / "data.t"
     file_obj.write_bytes(INPUT_EXAMPLE.encode())
@@ -54,7 +54,7 @@ def test_dss_execution(api, tmp_path):
         start_event.wait()        
         completion_event.set()
         assert params == json.loads(INPUT_EXAMPLE)
-        return RESPONSE.encode()
+        return RESPONSE
 
     with mock.patch.object(processing.Execution, 'execute', side_effect=my_execute) as execute:             
         resp = api.requests.post("/dss", data=data, files=files)            
