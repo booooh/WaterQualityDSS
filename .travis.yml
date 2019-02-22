@@ -9,12 +9,12 @@ services:
 
 install:
   - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-  - docker build --rm -f "Dockerfile" -t "$DOCKER_USERNAME/waterqualitydss-test:latest" -t "$DOCKER_USERNAME/waterqualitydss-test:$TRAVIS_COMMIT" --target test .
-  - docker build --rm -f "Dockerfile" -t "$DOCKER_USERNAME/waterqualitydss:latest" -t "$DOCKER_USERNAME/waterqualitydss:$TRAVIS_COMMIT" .
+  - docker build --rm -f "Dockerfile" -t "$DOCKER_USERNAME/waterqualitydss-test:latest" -t "$DOCKER_USERNAME/waterqualitydss-test:$TRAVIS_COMMIT" -t waterqualitydss-test:latest --target test .
+  - docker build --rm -f "Dockerfile" -t "$DOCKER_USERNAME/waterqualitydss:latest" -t "$DOCKER_USERNAME/waterqualitydss:$TRAVIS_COMMIT" -t waterqualitydss:latest.
 
 # command to run tests
 script:
-  - docker run --rm -it "$DOCKER_USERNAME/waterqualitydss-test:latest"
+  - docker-compose -f test/docker-compose.yml up --abort-on-container-exit
 
 deploy:
   provider: script
