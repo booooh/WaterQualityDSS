@@ -6,6 +6,8 @@ verify_ssl = true
 [dev-packages]
 pylint = "*"
 pytest = "*"
+pytest-asyncio = "*"
+autopep8 = "*"
 
 [packages]
 responder = "*"

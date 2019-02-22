@@ -1,5 +1,8 @@
 FROM python:3 as base
 
+RUN mkdir /model
+COPY w2_exe_linux_par /model/
+
 # use pipenv to install dependencies
 RUN pip install pipenv
 WORKDIR /app
@@ -19,6 +22,9 @@ EXPOSE ${PORT}
 # define entrypoint
 ENTRYPOINT ["python3",  "src/api.py"]
 
+# copy the model -- temporary hack, should probably receive all inputs from user via request
+COPY test/mock_stream_A/* /model/  
+
 # copy the contents of the app
 COPY src/ /app/src/
 
@@ -28,6 +34,8 @@ COPY src/ /app/src/
 
 ENV PYTHONPATH=/app/src
 COPY test/ /test/
-ENTRYPOINT [ "pytest", "/test" ]
+
+# ignore collections warning about deprecation warning, there's nothing we can do about that for now
+ENTRYPOINT [ "pytest", "/test", "-W", "ignore::DeprecationWarning" ]
 
 FROM release

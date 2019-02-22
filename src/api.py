@@ -1,3 +1,5 @@
+import json
+
 import responder
 import processing
 
@@ -12,16 +14,18 @@ async def status(req, resp, * , exec_id):
         status = "NOT_FOUND"
         result = None
 
-    resp.media = {"id" : exec_id, "status": status}
+    resp.media = {"id" : exec_id, "status": status}    
     if result is not None:
-        resp.media["result"] = result.decode()
+        resp.media["result"] = result
+        print(result)
 
 @api.route("/dss")
 async def exec_dss(req, resp):
     """
     Get the uploaded file, execute the dss in the background (multiple executions of the model)
     """    
-    params = await req.media("files")
+    params = json.loads((await req.media('files'))['input']['content'])
+
     exec_id = processing.get_exec_id()
     
     @api.background.task
